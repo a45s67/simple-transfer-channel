@@ -1,0 +1,26 @@
+# 參考實作 — GOTCHAS.md 第 1、2 條說明了 volume 和 SECRET_KEY_BASE 的坑
+services:
+  app:
+    build: .
+    image: simple-channel:latest
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      # 產生方式:openssl rand -hex 64
+      SECRET_KEY_BASE: CHANGE_ME
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: CHANGE_ME_TOO
+      DEFAULT_TTL_DAYS: "7"
+      MAX_UPLOAD_MB: "2048"
+      SOLID_QUEUE_IN_PUMA: "1"
+      RAILS_MAX_THREADS: "5"
+      TZ: Asia/Taipei
+    volumes:
+      # named volume,不要用 bind mount(容器內是非 root 使用者)
+      - storage:/rails/storage
+      - db:/rails/db
+
+volumes:
+  storage:
+  db:

@@ -1,0 +1,38 @@
+<% content_for :title, "Admin — channels" %>
+
+<div class="topbar">
+  <h1>Channels</h1>
+  <%= button_to "登出", admin_logout_path, method: :delete, class: "ghost" %>
+</div>
+
+<div class="card">
+  <h2>新增 channel</h2>
+  <%= form_with model: @channel, url: admin_channels_path, method: :post do |f| %>
+    <%= f.text_field :name, placeholder: "名稱(小寫英數、- 、_,2–32 字元)", autocomplete: "off",
+                     autocapitalize: "off", autocorrect: "off", spellcheck: false %>
+    <%= f.password_field :password, placeholder: "密碼(至少 8 字元)", autocomplete: "new-password" %>
+    <%= f.submit "建立" %>
+  <% end %>
+</div>
+
+<div class="card">
+  <h2>現有 channel</h2>
+  <% if @channels.any? %>
+    <table>
+      <% @channels.each do |channel| %>
+        <tr>
+          <td>#<%= channel.name %></td>
+          <td class="muted"><%= @item_counts.fetch(channel.id, 0) %> 個項目</td>
+          <td class="right">
+            <%= button_to "刪除", admin_channel_path(channel), method: :delete, class: "danger",
+                          form: { data: { turbo_confirm: "確定要刪除 ##{channel.name}?底下所有項目與檔案都會一併刪除。" } } %>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+  <% else %>
+    <p class="muted">還沒有任何 channel。</p>
+  <% end %>
+</div>
+
+<p class="muted"><%= link_to "← 回首頁", root_path %></p>

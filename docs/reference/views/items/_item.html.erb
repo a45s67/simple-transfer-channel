@@ -1,0 +1,26 @@
+<%# 參考實作 — 未執行過,以 SPEC.md 為準 %>
+<%# GOTCHAS.md 第 5 條:這個 partial 會被 model 層廣播渲染,沒有 controller context。 %>
+<%# 只能用 item 這個 local,路徑從 item.channel.name 推。 %>
+<%= tag.div id: dom_id(item), class: "item" do %>
+  <div class="meta">
+    <% if item.file? %>
+      <div class="name"><%= item.file.filename %></div>
+      <div class="muted">
+        <%= number_to_human_size(item.file.byte_size) %> ·
+        <%= l item.created_at, format: :short %>
+      </div>
+    <% else %>
+      <pre><%= item.body %></pre>
+      <div class="muted"><%= l item.created_at, format: :short %></div>
+    <% end %>
+  </div>
+
+  <div class="acts">
+    <% if item.file? %>
+      <%= link_to "下載", download_channel_item_path(name: item.channel.name, id: item.id) %>
+    <% end %>
+    <%= button_to "刪除", channel_item_path(name: item.channel.name, id: item.id),
+                  method: :delete, class: "danger",
+                  form: { data: { turbo_confirm: "確定刪除?" } } %>
+  </div>
+<% end %>

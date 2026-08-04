@@ -1,0 +1,11 @@
+production:
+  cleanup_expired_items:
+    class: CleanupExpiredItemsJob
+    queue: default
+    schedule: every hour
+
+development:
+  cleanup_expired_items:
+    class: CleanupExpiredItemsJob
+    queue: default
+    schedule: every hour

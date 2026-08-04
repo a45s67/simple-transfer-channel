@@ -1,0 +1,14 @@
+<% content_for :title, "Admin 登入" %>
+
+<h1>Admin</h1>
+
+<div class="card">
+  <%= form_with url: admin_login_path, method: :post do |f| %>
+    <%= f.text_field :user, placeholder: "帳號", autocomplete: "off",
+                     autocapitalize: "off", autocorrect: "off", spellcheck: false %>
+    <%= f.password_field :password, placeholder: "密碼", autocomplete: "current-password" %>
+    <%= f.submit "登入" %>
+  <% end %>
+</div>
+
+<p class="muted"><%= link_to "← 回首頁", root_path %></p>

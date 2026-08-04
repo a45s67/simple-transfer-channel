@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    image: simple-channel:latest
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      # 產生方式:openssl rand -hex 64
+      # 不要讓它每次重啟都變 —— session 會全部失效(GOTCHAS.md 第 2 條)
+      SECRET_KEY_BASE: cba3caeb4e74f90c67ac60eb5f536f75e850eff31c54062a4ae7d66fd25fa9a89ce1884de4f235a7e782e974daf207c3b0a6711af087d7cd6321cf94689c36e5
+
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: admin-password-change-me
+
+      DEFAULT_TTL_DAYS: "7"        # 0 = 永不過期
+      MAX_UPLOAD_MB: "2048"
+
+      # Solid Queue 跑在 Puma 行程內,不開獨立容器
+      SOLID_QUEUE_IN_PUMA: "1"
+
+      # direct upload 的 PUT 會佔住一條 thread 直到傳完,
+      # 想同時傳很多個大檔就把這個數字調高
+      RAILS_MAX_THREADS: "5"
+
+      # 這個站預設強制 HTTPS。要跑純 HTTP(例如只在 LAN / Tailscale 裡用,
+      # 或先照 VERIFY.md 手動走一遍)就保持 "0";放到公開網路請設回 "1"
+      # 並在前面擺一台終結 TLS 的 reverse proxy。
+      FORCE_SSL: "0"
+
+      TZ: Asia/Taipei
+    volumes:
+      # named volume,不要用 bind mount —— 容器裡跑的是非 root 的 rails 使用者,
+      # bind mount 的目錄在 host 上是 root 所有,SQLite 會直接開不起來。
+      # 備份用 `docker compose cp` 或臨時掛一個 busybox。
+      #
+      # SQLite 的四個 db 檔和 ActiveStorage 的 blob 都在 storage/ 底下,
+      # 所以只需要這一個 volume。
+      - storage:/rails/storage
+
+volumes:
+  storage:

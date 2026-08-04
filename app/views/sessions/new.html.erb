@@ -1,0 +1,27 @@
+<% content_for :title, "Simple channel" %>
+
+<h1>Simple channel</h1>
+
+<% if @channels.any? %>
+  <div class="card">
+    <h2>已登入的 channel</h2>
+    <ul class="plain">
+      <% @channels.each do |channel| %>
+        <li><%= link_to "##{channel.name}", channel_path(name: channel.name) %></li>
+      <% end %>
+    </ul>
+    <%= button_to "全部登出", logout_path, method: :delete, class: "ghost" %>
+  </div>
+<% end %>
+
+<div class="card">
+  <h2>進入 channel</h2>
+  <%= form_with url: login_path, method: :post do |f| %>
+    <%= f.text_field :name, placeholder: "channel 名稱", autocomplete: "off",
+                     autocapitalize: "off", autocorrect: "off", spellcheck: false %>
+    <%= f.password_field :password, placeholder: "密碼", autocomplete: "current-password" %>
+    <%= f.submit "進入" %>
+  <% end %>
+</div>
+
+<p class="muted"><%= link_to "Admin", admin_root_path %></p>

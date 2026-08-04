@@ -1,0 +1,13 @@
+# Omakase Ruby styling for Rails
+inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+
+AllCops:
+  Exclude:
+    # 規格附的參考片段,刻意保持原樣不修 —— 它們是設計意圖的載體,不是本專案的程式碼
+    - docs/reference/**/*
+
+# Overwrite or add rules to create your own house style
+#
+# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
+# Layout/SpaceInsideArrayLiteralBrackets:
+#   Enabled: false
