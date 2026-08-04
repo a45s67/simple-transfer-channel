@@ -1,0 +1,38 @@
+<% content_for :title, "Admin — channels" %>
+
+<div class="topbar">
+  <h1>Channels</h1>
+  <%= button_to "Sign out", admin_logout_path, method: :delete, class: "ghost" %>
+</div>
+
+<div class="card">
+  <h2>New channel</h2>
+  <%= form_with model: @channel, url: admin_channels_path, method: :post do |f| %>
+    <%= f.text_field :name, placeholder: "name (lowercase alphanumeric, - and _, 2–32 chars)",
+                     autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: false %>
+    <%= f.password_field :password, placeholder: "password (at least 8 characters)", autocomplete: "new-password" %>
+    <%= f.submit "Create" %>
+  <% end %>
+</div>
+
+<div class="card">
+  <h2>Existing channels</h2>
+  <% if @channels.any? %>
+    <table>
+      <% @channels.each do |channel| %>
+        <tr>
+          <td>#<%= channel.name %></td>
+          <td class="muted"><%= pluralize(@item_counts.fetch(channel.id, 0), "item") %></td>
+          <td class="right">
+            <%= button_to "Delete", admin_channel_path(channel), method: :delete, class: "danger",
+                          form: { data: { turbo_confirm: "Delete ##{channel.name}? Every item and file in it goes too." } } %>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+  <% else %>
+    <p class="muted">No channels yet.</p>
+  <% end %>
+</div>
+
+<p class="muted"><%= link_to "← Home", root_path %></p>

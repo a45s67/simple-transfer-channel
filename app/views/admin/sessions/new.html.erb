@@ -1,0 +1,14 @@
+<% content_for :title, "Admin sign in" %>
+
+<h1>Admin</h1>
+
+<div class="card">
+  <%= form_with url: admin_login_path, method: :post do |f| %>
+    <%= f.text_field :user, placeholder: "username", autocomplete: "off",
+                     autocapitalize: "off", autocorrect: "off", spellcheck: false %>
+    <%= f.password_field :password, placeholder: "password", autocomplete: "current-password" %>
+    <%= f.submit "Sign in" %>
+  <% end %>
+</div>
+
+<p class="muted"><%= link_to "← Home", root_path %></p>

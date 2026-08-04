@@ -1,0 +1,27 @@
+<% content_for :title, "Simple channel" %>
+
+<h1>Simple channel</h1>
+
+<% if @channels.any? %>
+  <div class="card">
+    <h2>Signed-in channels</h2>
+    <ul class="plain">
+      <% @channels.each do |channel| %>
+        <li><%= link_to "##{channel.name}", channel_path(name: channel.name) %></li>
+      <% end %>
+    </ul>
+    <%= button_to "Sign out of all", logout_path, method: :delete, class: "ghost" %>
+  </div>
+<% end %>
+
+<div class="card">
+  <h2>Enter a channel</h2>
+  <%= form_with url: login_path, method: :post do |f| %>
+    <%= f.text_field :name, placeholder: "channel name", autocomplete: "off",
+                     autocapitalize: "off", autocorrect: "off", spellcheck: false %>
+    <%= f.password_field :password, placeholder: "password", autocomplete: "current-password" %>
+    <%= f.submit "Enter" %>
+  <% end %>
+</div>
+
+<p class="muted"><%= link_to "Admin", admin_root_path %></p>

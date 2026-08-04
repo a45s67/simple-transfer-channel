@@ -1,0 +1,37 @@
+<% content_for :title, "##{current_channel.name}" %>
+
+<%= turbo_stream_from current_channel %>
+
+<div class="topbar">
+  <h1>#<%= current_channel.name %></h1>
+  <%= link_to "← Home", root_path %>
+</div>
+
+<div data-controller="dropzone"
+     data-dropzone-url-value="<%= channel_items_path(name: current_channel.name) %>"
+     data-dropzone-direct-upload-url-value="<%= rails_direct_uploads_path %>"
+     data-dropzone-max-bytes-value="<%= Item.max_upload_bytes %>">
+
+  <div class="dropzone"
+       data-dropzone-target="zone"
+       data-action="dragover->dropzone#dragover dragleave->dropzone#dragleave drop->dropzone#drop">
+    Drop files here, or paste files and screenshots with Ctrl/Cmd+V
+    <input type="file" multiple hidden
+           data-dropzone-target="picker"
+           data-action="dropzone#picked">
+    <button type="button" class="ghost" data-action="dropzone#pick">Choose files</button>
+  </div>
+
+  <div data-dropzone-target="progress"></div>
+
+  <div class="card">
+    <textarea rows="3" placeholder="Paste or type text, Ctrl/Cmd+Enter to send"
+              data-dropzone-target="textbody"
+              data-action="keydown->dropzone#submitText"></textarea>
+    <button type="button" data-action="dropzone#submitText">Send text</button>
+  </div>
+
+  <div id="items" class="items">
+    <%= render @items %>
+  </div>
+</div>

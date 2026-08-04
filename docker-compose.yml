@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    image: simple-channel:latest
+    restart: unless-stopped
+    ports:
+      # Override the host port with APP_PORT in .env; the container is always 80
+      - "${APP_PORT:-3000}:80"
+    environment:
+      # --- Secrets. Required: fail loudly rather than start without them ------
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?set this in .env -- generate with `openssl rand -hex 64`}
+      ADMIN_USER: ${ADMIN_USER:?set this in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set this in .env}
+
+      # --- Tunables. Defaults live here; override in .env ---------------------
+      DEFAULT_TTL_DAYS: ${DEFAULT_TTL_DAYS:-7}        # 0 = never expire
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-2048}
+
+      # 0 = plain HTTP. Set to 1 on the public internet, behind a
+      # TLS-terminating reverse proxy.
+      FORCE_SSL: ${FORCE_SSL:-0}
+
+      # A direct upload's PUT holds a thread for the whole transfer; raise this
+      # to move several large files at once.
+      RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
+
+      TZ: ${TZ:-Asia/Taipei}
+
+      # Solid Queue runs inside the Puma process; no separate container
+      SOLID_QUEUE_IN_PUMA: "1"
+    volumes:
+      # A named volume, not a bind mount. The container runs as the non-root
+      # `rails` user, and a bind-mounted host directory is owned by root, so
+      # SQLite simply fails to open. Back up with `docker compose cp`, or mount
+      # a throwaway busybox.
+      #
+      # The four SQLite databases and every ActiveStorage blob live under
+      # storage/, so this one volume is all that's needed.
+      - storage:/rails/storage
+
+volumes:
+  storage:

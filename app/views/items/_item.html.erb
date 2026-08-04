@@ -1,0 +1,32 @@
+<%# This partial is rendered by a broadcast from the model layer, with no %>
+<%# controller context. Use only the `item` local and derive paths from %>
+<%# item.channel.name -- never touch current_channel / session / any helper %>
+<%# that depends on request state. %>
+<%= tag.div id: dom_id(item), class: "item", data: { controller: "clipboard" } do %>
+  <div class="meta">
+    <% if item.file? %>
+      <div class="name"><%= item.file.filename %></div>
+      <div class="muted">
+        <%= number_to_human_size(item.file.byte_size) %> ·
+        <%= l item.created_at, format: :short %>
+      </div>
+    <% else %>
+      <%# Plain text output; ERB escapes it, so <script> is displayed, not run %>
+      <pre data-clipboard-target="source"><%= item.body %></pre>
+      <div class="muted"><%= l item.created_at, format: :short %></div>
+    <% end %>
+  </div>
+
+  <div class="acts">
+    <% if item.file? %>
+      <%= link_to "Download", download_channel_item_path(name: item.channel.name, id: item.id) %>
+    <% else %>
+      <button type="button" class="ghost"
+              data-action="clipboard#copy"
+              data-clipboard-target="button">Copy</button>
+    <% end %>
+    <%= button_to "Delete", channel_item_path(name: item.channel.name, id: item.id),
+                  method: :delete, class: "danger",
+                  form: { data: { turbo_confirm: "Delete this item?" } } %>
+  </div>
+<% end %>
