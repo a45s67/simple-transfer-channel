@@ -1,0 +1,16 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "ce8fa76b5dc416a67e8b162fe1a766f98c266a9c60a6bed2423ca145f4385c17",
+      "check_name": "SendFile",
+      "message": "Parameter value used in file name",
+      "file": "app/controllers/items_controller.rb",
+      "line": 43,
+      "confidence": "Weak",
+      "note": "誤報。params[:id] 只用來選記錄(而且是從 current_channel.items 出發,見不變量 3),不參與路徑組成。實際的路徑來自 blob.key —— ActiveStorage 產生的隨機 token,不是使用者輸入。使用者能控制的只有檔名,而檔名完全不影響磁碟路徑:test/integration/download_test.rb 的「檔名含路徑分隔符時不會寫到預期目錄之外」會上傳一個叫 ../../etc/passwd 的檔案,並斷言實際落點在 storage root 底下。這裡不能改用 send_data —— 那會把整個檔案(可能好幾 GB)讀進記憶體。"
+    }
+  ],
+  "brakeman_version": "8.0.5"
+}

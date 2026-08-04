@@ -98,7 +98,7 @@ DELETE /admin/channels/:id        admin/channels#destroy
 **Admin 頁 `/admin/channels`** — channel 列表(名稱、項目數、刪除鍵)+ 新增表單。
 刪除要有確認。
 
-視覺不用花俏,但要能在深色模式下看。`reference/assets/application.css` 有一份可用的。
+視覺不用花俏,但要能在深色模式下看。
 
 ## 過期清除
 
