@@ -4,31 +4,29 @@ services:
     image: simple-channel:latest
     restart: unless-stopped
     ports:
-      - "3000:80"
+      # 主機端的 port 可以在 .env 裡用 APP_PORT 換掉,容器內固定是 80
+      - "${APP_PORT:-3000}:80"
     environment:
-      # 產生方式:openssl rand -hex 64
-      # 不要讓它每次重啟都變 —— session 會全部失效(GOTCHAS.md 第 2 條)
-      SECRET_KEY_BASE: cba3caeb4e74f90c67ac60eb5f536f75e850eff31c54062a4ae7d66fd25fa9a89ce1884de4f235a7e782e974daf207c3b0a6711af087d7cd6321cf94689c36e5
+      # --- 祕密,必填,沒有就直接讓 compose 報錯不要起 ---------------------
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?請在 .env 設定,產生方式:openssl rand -hex 64}
+      ADMIN_USER: ${ADMIN_USER:?請在 .env 設定}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?請在 .env 設定}
 
-      ADMIN_USER: admin
-      ADMIN_PASSWORD: admin-password-change-me
+      # --- 可調,預設值寫在這裡,要改就在 .env 覆蓋 -------------------------
+      DEFAULT_TTL_DAYS: ${DEFAULT_TTL_DAYS:-7}        # 0 = 永不過期
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-2048}
 
-      DEFAULT_TTL_DAYS: "7"        # 0 = 永不過期
-      MAX_UPLOAD_MB: "2048"
-
-      # Solid Queue 跑在 Puma 行程內,不開獨立容器
-      SOLID_QUEUE_IN_PUMA: "1"
+      # 預設 0 = 純 HTTP。放到公開網路請設 1,並在前面擺一台終結 TLS 的 proxy
+      FORCE_SSL: ${FORCE_SSL:-0}
 
       # direct upload 的 PUT 會佔住一條 thread 直到傳完,
       # 想同時傳很多個大檔就把這個數字調高
-      RAILS_MAX_THREADS: "5"
+      RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
 
-      # 這個站預設強制 HTTPS。要跑純 HTTP(例如只在 LAN / Tailscale 裡用,
-      # 或先照 VERIFY.md 手動走一遍)就保持 "0";放到公開網路請設回 "1"
-      # 並在前面擺一台終結 TLS 的 reverse proxy。
-      FORCE_SSL: "0"
+      TZ: ${TZ:-Asia/Taipei}
 
-      TZ: Asia/Taipei
+      # Solid Queue 跑在 Puma 行程內,不開獨立容器
+      SOLID_QUEUE_IN_PUMA: "1"
     volumes:
       # named volume,不要用 bind mount —— 容器裡跑的是非 root 的 rails 使用者,
       # bind mount 的目錄在 host 上是 root 所有,SQLite 會直接開不起來。

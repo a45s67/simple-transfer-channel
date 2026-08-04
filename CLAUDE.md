@@ -3,7 +3,12 @@
 自架的檔案中繼站。Rails 8 單體,SQLite,ActiveStorage disk service,
 Turbo + Stimulus + importmap,沒有 Node build step。
 
-先讀 `README.md`(架構、環境變數、三個不變量),產品規格在 `docs/SPEC.md`。
+先讀 `README.md`(架構、環境變數、三個不變量),產品規格在 `docs/SPEC.md`,
+部署方式在 `docs/DEPLOY.md`。
+
+祕密(`SECRET_KEY_BASE` / `ADMIN_USER` / `ADMIN_PASSWORD`)只放 `.env`,
+**不要寫回 `docker-compose.yml`**,那個檔案是進版控的。
+新增環境變數時 `.env.example` 要跟著更新。
 
 ## 不可妥協的三件事
 

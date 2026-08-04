@@ -9,18 +9,17 @@
 Rails 8 單體 · SQLite · Solid Queue / Cache / Cable · ActiveStorage disk service ·
 Turbo + Stimulus + importmap · 沒有 Node build step。
 
-產品規格在 [`docs/SPEC.md`](docs/SPEC.md)。
+產品規格在 [`docs/SPEC.md`](docs/SPEC.md),部署方式在 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ---
 
 ## 跑起來
 
-改 `docker-compose.yml`:
-
-- `SECRET_KEY_BASE` 換成 `openssl rand -hex 64` 的輸出
-- `ADMIN_USER` / `ADMIN_PASSWORD` 換掉
-
 ```bash
+cp .env.example .env
+sed -i "s|^SECRET_KEY_BASE=.*|SECRET_KEY_BASE=$(openssl rand -hex 64)|" .env
+# 再把 .env 裡的 ADMIN_PASSWORD 填掉
+
 docker compose build
 docker compose up -d
 docker compose logs -f
@@ -28,25 +27,33 @@ docker compose logs -f
 
 開 http://localhost:3000 → `/admin` 登入建 channel → 回首頁用 channel 名稱 + 密碼進入。
 
+祕密只放 `.env`(已 gitignore),不進版控。三項必填缺一項的話 compose 會直接
+報錯不讓你起 —— 這是刻意的,不要讓它靜靜跑起一個沒有 admin 密碼的站。
+
 ## 環境變數
+
+都寫在 `.env`,範本見 [`.env.example`](.env.example)。
+可選項的預設值寫在 `docker-compose.yml`,不寫 `.env` 就用預設。
 
 | 變數 | 預設 | 說明 |
 |---|---|---|
-| `SECRET_KEY_BASE` | (必填) | `openssl rand -hex 64`。**不要每次重啟都換**,session 會全部失效 |
-| `ADMIN_USER` | (空) | admin 帳號。與 `ADMIN_PASSWORD` 任一為空時,admin 登入一律失敗 |
-| `ADMIN_PASSWORD` | (空) | admin 密碼 |
+| `SECRET_KEY_BASE` | **必填** | `openssl rand -hex 64`。**不要每次重啟都換**,session 會全部失效 |
+| `ADMIN_USER` | **必填** | admin 帳號 |
+| `ADMIN_PASSWORD` | **必填** | admin 密碼。與 `ADMIN_USER` 任一為空時,admin 登入一律失敗 |
+| `APP_PORT` | `3000` | 主機端要開哪個 port(容器內固定 80) |
 | `DEFAULT_TTL_DAYS` | `7` | 新項目幾天後過期。`0` = 永不過期 |
 | `MAX_UPLOAD_MB` | `2048` | 單檔上限 |
-| `FORCE_SSL` | `1` | `0` 時關閉強制 HTTPS 與 secure cookie |
-| `SOLID_QUEUE_IN_PUMA` | (空) | 設 `1` 讓 Solid Queue 跑在 Puma 行程內 |
+| `FORCE_SSL` | `0` | `1` 時強制 HTTPS 與 secure cookie |
 | `RAILS_MAX_THREADS` | `5` | direct upload 的 PUT 會佔住一條 thread 直到傳完 |
-| `TZ` | `UTC` | 時區,同時決定畫面上的時間顯示 |
+| `TZ` | `Asia/Taipei` | 時區,同時決定畫面上的時間顯示 |
 
-沒有 admin 資料表。admin 就是上面那組 ENV,用 SHA256 + 固定長度比對驗證。
+沒有 admin 資料表。admin 就是 `ADMIN_USER` / `ADMIN_PASSWORD` 這一組,
+用 SHA256 + 固定長度比對驗證。
 
-**`FORCE_SSL`**:`config.force_ssl` 預設是開的,但這個 app 常見的部署是 LAN 或
-Tailscale 上的純 HTTP,所以 compose 裡設成 `0`。放到公開網路前請設回 `1`,
-並在前面擺一台終結 TLS 的 reverse proxy。`/up` 這個 health check 不受轉址影響。
+**`FORCE_SSL`**:程式碼裡 `config.force_ssl` 預設是開的,但這個 app 常見的部署是
+LAN 或 Tailscale 上的純 HTTP,所以 compose 的預設值設成 `0`。放到公開網路前請在
+`.env` 設 `FORCE_SSL=1`,並在前面擺一台終結 TLS 的 reverse proxy。
+`/up` 這個 health check 不受轉址影響。
 
 ## 資料放哪
 
@@ -60,8 +67,11 @@ host 上的目錄是 root 所有,SQLite 會直接開不起來。備份:
 docker compose cp app:/rails/storage ./backup-storage
 ```
 
-`SECRET_KEY_BASE` 與 `config/master.key` 兩條路裡,這裡選前者。
+`SECRET_KEY_BASE` 與 `config/master.key` 兩條路裡,這裡選前者(放 `.env`)。
 master.key 沒有被使用,也不需要掛進容器。
+
+送上其他機器的方式(`git archive` 或 bare repo + `git push`)見
+[`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ## 過期清除
 

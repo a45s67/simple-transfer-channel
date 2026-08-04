@@ -9,6 +9,8 @@
 
 # Ignore all environment files.
 /.env*
+# ...但 .env.example 是範本,要進版控
+!/.env.example
 
 # Ignore all logfiles and tempfiles.
 /log/*
