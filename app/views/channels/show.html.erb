@@ -7,10 +7,14 @@
   <%= link_to "← Home", root_path %>
 </div>
 
-<div data-controller="dropzone"
+<div data-controller="dropzone api-urls"
      data-dropzone-url-value="<%= channel_items_path(name: current_channel.name) %>"
      data-dropzone-direct-upload-url-value="<%= rails_direct_uploads_path %>"
-     data-dropzone-max-bytes-value="<%= Item.max_upload_bytes %>">
+     data-dropzone-max-bytes-value="<%= Item.max_upload_bytes %>"
+     data-api-urls-refresh-url-value="<%= channel_api_urls_path(name: current_channel.name) %>"
+     data-api-urls-upload-url-value="<%= @api_urls[:upload_url] %>"
+     data-api-urls-download-base-value="<%= @api_urls[:download_base] %>"
+     data-api-urls-ttl-seconds-value="<%= @api_urls[:ttl_seconds] %>">
 
   <div class="dropzone"
        data-dropzone-target="zone"
@@ -29,6 +33,20 @@
               data-dropzone-target="textbody"
               data-action="keydown->dropzone#submitText"></textarea>
     <button type="button" data-action="dropzone#submitText">Send text</button>
+  </div>
+
+  <div class="card" data-controller="clipboard">
+    <h2>Upload from a terminal</h2>
+    <pre class="cmd" data-clipboard-target="source"
+         data-api-urls-target="uploadCommand">curl -T ./file.zip <%= @api_urls[:upload_url] %></pre>
+    <button type="button" class="ghost"
+            data-action="clipboard#copy"
+            data-clipboard-target="button">Copy</button>
+    <p class="muted">
+      The trailing slash is what lets curl append the file's own name.
+      Links stop working <%= distance_of_time_in_words(@api_urls[:ttl_seconds]) %> after they are handed out;
+      this one replaces itself while the page is open.
+    </p>
   </div>
 
   <div id="items" class="items">

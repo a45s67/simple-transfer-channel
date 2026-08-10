@@ -16,6 +16,10 @@ services:
       DEFAULT_TTL_DAYS: ${DEFAULT_TTL_DAYS:-7}        # 0 = never expire
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-2048}
 
+      # How long a copied curl URL keeps working. Everything the URL grants is
+      # granted for this long, so keep it short.
+      API_TOKEN_TTL_MINUTES: ${API_TOKEN_TTL_MINUTES:-5}
+
       # 0 = plain HTTP. Set to 1 on the public internet, behind a
       # TLS-terminating reverse proxy.
       FORCE_SSL: ${FORCE_SSL:-0}

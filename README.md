@@ -38,12 +38,51 @@ Defaults for the optional ones live in `docker-compose.yml`.
 | `APP_PORT` | `3000` | Host port to publish on (the container always listens on 80) |
 | `DEFAULT_TTL_DAYS` | `7` | Days until a new item expires. `0` = never |
 | `MAX_UPLOAD_MB` | `2048` | Per-file limit |
+| `API_TOKEN_TTL_MINUTES` | `5` | How long a copied curl URL keeps working |
 | `FORCE_SSL` | `0` | `1` forces HTTPS and secure cookies |
 | `RAILS_MAX_THREADS` | `5` | A direct upload's PUT holds a thread for the whole transfer |
 | `TZ` | `Asia/Taipei` | Also determines how timestamps render |
 
 There is no admin table. The admin is that one pair of `ADMIN_USER` /
 `ADMIN_PASSWORD` values, compared with SHA256 plus a fixed-length comparison.
+
+## The curl API
+
+A channel page hands out ready-made commands for machines that have no browser.
+Copy the one in the "Upload from a terminal" card, or press **Copy curl** on any
+file to get its download command:
+
+```bash
+# upload -- the trailing slash is what makes curl append the file's own name
+curl -T ./report.zip http://box:3000/api/c/lab1/u/eyJfcmFpbHMi…/
+
+# download -- the filename in the path is what makes plain -O write the right one
+curl -O http://box:3000/api/c/lab1/d/eyJfcmFpbHMi…/42/report.zip
+```
+
+An upload replies with the download URL for the item it just created, so a
+script can hand one straight on.
+
+**The token in the URL is the entire credential, and it is only good for five
+minutes** (`API_TOKEN_TTL_MINUTES`). It is a signed message, not a stored
+secret — `{ channel id, direction }` with an expiry, signed with a key derived
+from `SECRET_KEY_BASE`. That has consequences worth knowing:
+
+- Nothing is stored and nothing is revocable. A leaked URL is dealt with by
+  waiting; five minutes is chosen to make that an acceptable answer.
+- A link is minted for one direction. A download URL cannot upload, and an
+  upload URL cannot read anything back.
+- The channel page rotates its links before they expire, so what is on screen is
+  always usable — but a URL already copied elsewhere still dies on its own
+  schedule. Copy it again when it does.
+- The token travels in the path, so it lands in access logs. That is the price
+  of a URL that works with a bare `curl -T`, and the reason the window is short.
+
+The API never reads the session, and being signed in to the channel in a browser
+grants nothing there. Being able to *mint* a link is what needs the session:
+`/c/:name/api_urls` is behind the same channel login as everything else.
+Successful requests are not rate limited — pushing 200 files from a script is a
+normal thing to do — but failed ones are, so probing gets nowhere.
 
 ## Expiry and cleanup
 
@@ -70,10 +109,13 @@ moving the tests too.
 ### 1. Downloads are always `attachment` + `application/octet-stream` + `nosniff`
 
 People move malware samples through this site. Upload an `.html` or an `.svg` and
-it must never render inline in a browser. `items#download` writes those three
-headers itself and never looks at the content type declared on the blob.
+it must never render inline in a browser. `ItemDownloading#send_item_file` writes
+those three headers itself and never looks at the content type declared on the
+blob. Two routes serve files — the browser's `items#download` and the curl API's
+`api/items#show` — and they share that one concern rather than each writing their
+own headers; the download tests run every header assertion against both.
 
-→ `app/controllers/items_controller.rb` · test `test/integration/download_test.rb`
+→ `app/controllers/concerns/item_downloading.rb` · test `test/integration/download_test.rb`
 
 Two things follow from it:
 
@@ -113,7 +155,15 @@ id is in `session[:channel_ids]`, and every items action queries from
 Admin and channel authorization are independent: an admin can create and delete
 channels but cannot see what is inside them. That is on purpose.
 
-→ `app/controllers/application_controller.rb` · test `test/integration/authorization_test.rb`
+The curl API has its own `current_channel`, resolved from the signed token
+instead of the session, and it additionally requires that the channel named in
+the path *is* the token's channel — a link for A is never usable under B's name.
+It is CSRF-exempt because curl has no CSRF token, which is only safe as long as
+it keeps ignoring the session completely: a cookie alone must be worth nothing
+there, or exempting CSRF would open exactly the hole it exists to close.
+
+→ `app/controllers/application_controller.rb`, `app/controllers/api/base_controller.rb`
+· test `test/integration/authorization_test.rb`
 
 ### Other deliberate trade-offs
 
@@ -148,18 +198,25 @@ Gems go in a named volume so the repo stays clean; `-u` matches the host uid so
 nothing is written back as root. `bundle install` needs `build-essential` and
 `libyaml-dev`, both already in the full `ruby:3.4` image.
 
-`config/brakeman.ignore` holds one documented false positive (the `send_file` in
-`items#download`). Any new entry must carry a `note` explaining why it's acceptable.
+`config/brakeman.ignore` is empty. It used to hold one entry, for the `send_file`
+in `items#download`; moving that call into `ItemDownloading` put it out of reach
+of Brakeman's data flow and the warning stopped firing, so the entry went with
+it. Read that as "Brakeman is no longer watching that line", not as "the line got
+safer" — the argument for why the path is safe (it comes from `blob.key`, never
+from a filename) is in the concern's comments, and the traversal test in
+`download_test.rb` is what actually holds it. Any new entry must carry a `note`
+explaining why it's acceptable.
 
 ### Test coverage
 
 ```
-test/models/channel_test.rb                     name normalization, format, password length, authenticate
+test/models/channel_test.rb                     name normalization, format, password length, authenticate, API tokens
 test/models/item_test.rb                        kind validation, alive scope, TTL, size limits, broadcasts
 test/integration/authorization_test.rb       🔒 invariant 3
 test/integration/rate_limit_test.rb          🔒 invariant 2
 test/integration/download_test.rb            🔒 invariant 1
 test/integration/items_test.rb                  upload / send text / delete, XSS, 0 bytes, over the limit
+test/integration/api_test.rb                    curl upload / download, token expiry, direction, failure limit
 test/integration/sessions_test.rb               sign in and out, Turbo Stream broadcasts
 test/integration/admin_test.rb                  blank ENV fails closed, create and delete channels
 test/jobs/cleanup_expired_items_job_test.rb     expiry, and the blob really leaving disk

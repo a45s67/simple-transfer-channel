@@ -88,6 +88,54 @@ class ChannelTest < ActiveSupport::TestCase
     assert_not channel.authenticate("")
   end
 
+  test "an api token verifies back to the channel that minted it" do
+    channel = create_channel("lab1")
+
+    assert_equal channel, Channel.from_api_token(channel.api_token(Channel::API_UPLOAD), Channel::API_UPLOAD)
+  end
+
+  test "an api token only verifies for the direction it was minted for" do
+    channel = create_channel("lab1")
+
+    assert_nil Channel.from_api_token(channel.api_token(Channel::API_UPLOAD), Channel::API_DOWNLOAD)
+    assert_nil Channel.from_api_token(channel.api_token(Channel::API_DOWNLOAD), Channel::API_UPLOAD)
+  end
+
+  test "an api token stops verifying after its lifetime" do
+    channel = create_channel("lab1")
+    token = channel.api_token(Channel::API_DOWNLOAD)
+
+    travel Channel.api_token_ttl - 10.seconds do
+      assert_equal channel, Channel.from_api_token(token, Channel::API_DOWNLOAD)
+    end
+
+    travel Channel.api_token_ttl + 10.seconds do
+      assert_nil Channel.from_api_token(token, Channel::API_DOWNLOAD)
+    end
+  end
+
+  test "an api token is a usable URL path segment" do
+    token = create_channel("lab1").api_token(Channel::API_UPLOAD)
+
+    # The default Base64 alphabet contains "/" and "+", which would be mangled
+    # in a path. url_safe: true is what keeps this true.
+    assert_match(/\A[\w\-]+\z/, token)
+  end
+
+  test "a token whose channel is gone verifies to nothing" do
+    channel = create_channel("lab1")
+    token = channel.api_token(Channel::API_UPLOAD)
+    channel.destroy
+
+    assert_nil Channel.from_api_token(token, Channel::API_UPLOAD)
+  end
+
+  test "junk is never mistaken for an api token" do
+    [ "", "garbage", "a--b", nil ].each do |bad|
+      assert_nil Channel.from_api_token(bad, Channel::API_UPLOAD), "#{bad.inspect} should not verify"
+    end
+  end
+
   test "destroying a channel destroys all of its items" do
     channel = create_channel("lab1")
     create_text_item(channel)

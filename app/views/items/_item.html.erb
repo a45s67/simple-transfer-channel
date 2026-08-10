@@ -20,6 +20,17 @@
   <div class="acts">
     <% if item.file? %>
       <%= link_to "Download", download_channel_item_path(name: item.channel.name, id: item.id) %>
+      <%# Deliberately no token here. This partial also renders from a broadcast, %>
+      <%# with no request to build an absolute URL from -- and one short-lived %>
+      <%# token per page is one thing to rotate instead of one per item. The %>
+      <%# api-urls controller fills this in, including for items that arrive live. %>
+      <span hidden data-clipboard-target="source"
+            data-api-urls-target="downloadCommand"
+            data-item-id="<%= item.id %>"
+            data-filename="<%= item.file.filename %>"></span>
+      <button type="button" class="ghost"
+              data-action="clipboard#copy"
+              data-clipboard-target="button">Copy curl</button>
     <% else %>
       <button type="button" class="ghost"
               data-action="clipboard#copy"

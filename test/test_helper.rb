@@ -67,4 +67,22 @@ class ActionDispatch::IntegrationTest
   def login_admin(user: ADMIN_USER, password: ADMIN_PASSWORD)
     with_admin_env { post admin_login_path, params: { user: user, password: password } }
   end
+
+  # The curl API's URLs are built by hand rather than by a route helper, for the
+  # same reason the app builds them by hand: the trailing slash on an upload URL
+  # is load-bearing (curl -T appends the filename to it).
+  OCTET_STREAM = { "CONTENT_TYPE" => "application/octet-stream" }.freeze
+
+  def api_upload_path(channel, filename = nil, token: channel.api_token(Channel::API_UPLOAD))
+    "/api/c/#{channel.name}/u/#{token}/#{filename}"
+  end
+
+  def api_download_path(channel, item, token: channel.api_token(Channel::API_DOWNLOAD))
+    name = item.file.attached? ? ERB::Util.url_encode(item.file.filename.sanitized.to_s) : "x"
+    "/api/c/#{channel.name}/d/#{token}/#{item.id}/#{name}"
+  end
+
+  def api_upload(channel, filename, content, **options)
+    put api_upload_path(channel, filename, **options), params: content, headers: OCTET_STREAM
+  end
 end

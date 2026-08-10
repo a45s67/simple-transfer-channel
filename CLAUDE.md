@@ -13,8 +13,10 @@ it, not just be made to pass again.
    `Content-Type: application/octet-stream`.**
    People move malware samples through this site. Upload an `.html` or `.svg`
    and it must never render inline in a browser. The MIME type declared at
-   upload time is attacker-controlled — don't trust it.
-   → `items#download` · `test/integration/download_test.rb`
+   upload time is attacker-controlled — don't trust it. Both routes that serve
+   files (`items#download` and the curl API's `api/items#show`) go through one
+   shared concern; keep it that way rather than writing the headers twice.
+   → `ItemDownloading#send_item_file` · `test/integration/download_test.rb`
 
    Two things go with it: don't turn on `config.active_storage.draw_routes`, and
    don't enable `x_sendfile_header`. Reasons are in the README under
@@ -32,6 +34,13 @@ it, not just be made to pass again.
    from `current_channel`, never `Item.find(params[:id])`. Admin and channel
    authorization are independent.
    → `application_controller#current_channel` · `test/integration/authorization_test.rb`
+
+   The curl API (`app/controllers/api/`) is the second front door: it resolves
+   `current_channel` from a signed token instead of the session, and requires the
+   channel named in the path to be the token's channel. It is CSRF-exempt, which
+   is **only** safe because it never touches the session — if anything under
+   `Api::` ever starts reading a cookie, that exemption becomes a CSRF hole.
+   Both directions are tested in `authorization_test.rb`.
 
 ## Scope
 

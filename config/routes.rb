@@ -6,9 +6,20 @@ Rails.application.routes.draw do
 
   scope "/c/:name", constraints: { name: Channel::NAME_ROUTE_CONSTRAINT } do
     get    "/",                   to: "channels#show",  as: :channel
+    get    "/api_urls",           to: "channels#api_urls", as: :channel_api_urls
     post   "/items",              to: "items#create",   as: :channel_items
     delete "/items/:id",          to: "items#destroy",  as: :channel_item
     get    "/items/:id/download", to: "items#download", as: :download_channel_item
+  end
+
+  # The curl API. The token in the path is the whole credential -- these actions
+  # never look at the session (see Api::BaseController).
+  #
+  # format: false is required: without it "report.zip" splits into a filename
+  # and a :format of "zip".
+  scope "/api/c/:name", constraints: { name: Channel::NAME_ROUTE_CONSTRAINT }, format: false do
+    put "/u/:token(/*filename)",     to: "api/items#create", as: :api_upload_channel_items
+    get "/d/:token/:id(/*filename)", to: "api/items#show",   as: :api_download_channel_item
   end
 
   namespace :admin do

@@ -97,6 +97,22 @@ form { display: inline; }
 .dropzone.over { border-color: var(--accent); color: var(--accent); }
 .dropzone button { display: block; margin: 12px auto 0; }
 
+/* A curl command, meant to be selected and copied. Never wrap it -- a broken
+   line pastes into a shell as two commands. */
+.cmd {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.card p.muted { margin: 10px 0 0; }
+
 .flash { padding: 10px 14px; border-radius: 7px; margin-bottom: 16px; font-size: 14px; }
 .flash.alert { background: #fceaea; color: #7a1f1d; }
 .flash.notice { background: #e5f4ee; color: #10553f; }

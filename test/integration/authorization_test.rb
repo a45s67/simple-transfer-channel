@@ -157,6 +157,63 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
+  test "a token for channel A is refused under channel B's name" do
+    get api_download_path(@b, @b_file, token: @a.api_token(Channel::API_DOWNLOAD))
+
+    assert_response :unauthorized
+
+    assert_no_difference "@b.items.count" do
+      api_upload(@b, "x.bin", "x", token: @a.api_token(Channel::API_UPLOAD))
+    end
+
+    assert_response :unauthorized
+  end
+
+  test "a token for channel A cannot reach channel B's item id under A's own name" do
+    get api_download_path(@a, @b_file)
+
+    assert_response :not_found
+  end
+
+  # The API is CSRF-exempt, which is only safe because it never reads the
+  # session. A cookie on its own has to be worth nothing there.
+  test "a session signed in to a channel is not enough to use that channel's API" do
+    login_channel(@b)
+
+    get "/api/c/bravo/d/garbage/#{@b_file.id}/x.bin"
+
+    assert_response :unauthorized
+
+    assert_no_difference "@b.items.count" do
+      put "/api/c/bravo/u/garbage/x.bin", params: "x", headers: OCTET_STREAM
+    end
+
+    assert_response :unauthorized
+  end
+
+  # ...and the converse: using the API does not sign anybody in.
+  test "a valid token grants nothing to the browser side" do
+    api_upload(@b, "x.bin", "x")
+
+    assert_response :created
+
+    get channel_path(name: "bravo")
+
+    assert_redirected_to root_path
+
+    get download_channel_item_path(name: "bravo", id: @b_file.id)
+
+    assert_redirected_to root_path
+  end
+
+  test "being admin grants no API access either" do
+    login_admin
+
+    get "/api/c/bravo/d/garbage/#{@b_file.id}/x.bin"
+
+    assert_response :unauthorized
+  end
+
   test "ActiveStorage's own blob-serving routes are not drawn" do
     # They authenticate a signed_id and ignore the session entirely, so leaving
     # them in place would bypass invariants 1 and 3 at once.
