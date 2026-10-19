@@ -41,6 +41,7 @@ Defaults for the optional ones live in `docker-compose.yml`.
 | `API_TOKEN_TTL_MINUTES` | `5` | How long a copied curl URL keeps working |
 | `FORCE_SSL` | `0` | `1` forces HTTPS and secure cookies |
 | `RAILS_MAX_THREADS` | `5` | A direct upload's PUT holds a thread for the whole transfer |
+| `HTTP_READ_TIMEOUT` / `HTTP_WRITE_TIMEOUT` | `3600` | Seconds Thruster allows for a whole upload / download (a hard deadline, not an idle timeout) |
 | `TZ` | `Asia/Taipei` | Also determines how timestamps render |
 
 There is no admin table. The admin is that one pair of `ADMIN_USER` /

@@ -28,6 +28,12 @@ services:
       # to move several large files at once.
       RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
 
+      # Thruster's limits on the *total* time to read a request / write a
+      # response -- not idle timeouts. Its 30s default cuts off any upload or
+      # download that takes longer, however steadily it is moving.
+      HTTP_READ_TIMEOUT: ${HTTP_READ_TIMEOUT:-3600}
+      HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:-3600}
+
       TZ: ${TZ:-Asia/Taipei}
 
       # Solid Queue runs inside the Puma process; no separate container
